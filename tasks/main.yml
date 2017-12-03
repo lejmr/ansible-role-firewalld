@@ -1,0 +1,10 @@
+---
+  - name: Ensure iptables is installed.
+    package: name=firewalld state=installed
+  
+  - name: Configure the firewalld service
+    service:
+      name: firewalld
+      state: "{{ firewall_state }}"
+      enabled: "{{ firewall_enabled_at_boot }}"
+  
