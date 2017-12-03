@@ -70,5 +70,10 @@
   - name: Ensure default zone
     command: "firewall-cmd --set-default-zone={{firewall_default_zone}}"
     when: disc_defaultzone.stdout != firewall_default_zone
-    
+    notify: firewalld make permanent
+  
+  - name: Ensure source addresses for zone is defined
+    firewalld: zone={{firewall_zone}} source={{firewall_zone_source}} state=enabled permanent=yes
+    when: firewall_zone_source and firewall_zone_source|ipaddr('net')
+    notify: firewalld make permanent
     
