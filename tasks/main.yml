@@ -7,16 +7,19 @@
       name: firewalld
       state: "{{ firewall_state }}"
       enabled: "{{ firewall_enabled_at_boot }}"
-  
+    
   - name: Discover zones
     command: firewall-cmd --get-zones
     register: disc_zones
     changed_when: False
   
   - name: Ensure zone exists
-    command: "firewall-cmd --new-zone={{firewall_zone}} --permanent && firewall-cmd --reload"
+    command: "firewall-cmd --new-zone={{firewall_zone}} --permanent"
     when: not firewall_zone in disc_zones.stdout.split(' ')
     
+  - name: Ensure zone can be used further
+    command: "firewall-cmd --reload"
+    when: not firewall_zone in disc_zones.stdout.split(' ')
   
   # Configure ports to zone
   - name: Discover ports for zone '{{firewall_zone}}'
@@ -36,6 +39,7 @@
       zone: '{{firewall_zone}}'
     with_items: '{{req_ports}}'
     notify: firewalld make permanent
+    when: req_ports
     
   - name: Ensure not requited ports are not installed
     firewalld:
@@ -44,6 +48,27 @@
       zone: '{{firewall_zone}}'
     with_items: '{{enabled_ports|difference(req_ports)}}'
     notify: firewalld make permanent
-  # 
+    when: enabled_ports
 
+
+  # Zone configuration
+  - name: Discover zone target configuration
+    command: "firewall-cmd --zone={{firewall_zone}} --get-target --permanent"
+    register: disc_target
+    changed_when: False
+  
+  - name: Ensure target configuration
+    command: "firewall-cmd --zone={{firewall_zone}} --set-target={{firewall_zone_target}} --permanent"
+    when: disc_target.stdout != firewall_zone_target
+    notify: firewalld make permanent
+  
+  - name: Discover default zone
+    command: firewall-cmd --get-default-zone
+    register: disc_defaultzone
+    changed_when: False
+  
+  - name: Ensure default zone
+    command: "firewall-cmd --set-default-zone={{firewall_default_zone}}"
+    when: disc_defaultzone.stdout != firewall_default_zone
+    
     

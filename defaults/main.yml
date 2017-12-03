@@ -16,7 +16,9 @@ firewall_log_dropped_packets: true
 firewall_disable_ufw: false
 
 # Zone related information
-firewall_zone: "drop"
+firewall_zone_source: None
+firewall_zone_target: "DROP"
+firewall_zone: "public"
 firewall_default_zone: '{{firewall_zone}}'
 firewall_source: None
 firewall_masquarede: no
