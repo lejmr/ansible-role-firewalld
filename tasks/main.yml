@@ -8,3 +8,31 @@
       state: "{{ firewall_state }}"
       enabled: "{{ firewall_enabled_at_boot }}"
   
+  - name: Discover ports for zone '{{firewall_zone}}'
+    command: "firewall-cmd --zone={{firewall_zone}} --list-ports"
+    register: zone_ports
+    changed_when: False
+  
+  
+  - name: Discover firewalld managed ports
+    set_fact: 
+      req_ports: '{{firewall_allowed_tcp_ports|protocolize + firewall_allowed_udp_ports|protocolize("udp")}}'
+      enabled_ports: "{{zone_ports.stdout.split(' ')}}"
+      
+  - name: Ensure requested ports are enabled
+    firewalld:
+      port: '{{item}}'
+      state: enabled
+      zone: '{{firewall_zone}}'
+    with_items: '{{req_ports}}'
+    
+  - name: Ensure not requited ports are not installed
+    firewalld:
+      port: '{{item}}'
+      state: disabled
+      zone: '{{firewall_zone}}'
+    with_items: '{{enabled_ports|difference(req_ports)}}'
+      
+
+
+    
